@@ -14,14 +14,14 @@ PATH = Path(__file__).parent
 load_dotenv( PATH / "keys.env" )
 API_KEY = os.getenv( "API_KEY" )
 
-INDEX = "SP500"
+INDEX = "MS50"
 youtube = build("youtube", "v3", developerKey=API_KEY)
 
 
 #cerca i (max) video più recenti riguardo la (keyword)
-def search_videos( keyword, keys, months ):
+def search_videos( ticker, keys, months ):
     videos = []
-    ticker = keyword.split(" ", 1)[0]
+    keyword = f"${ticker}"
     next_page_token = None
     months_ago = (datetime.now() - timedelta(days=months*30)).strftime("%Y-%m-%dT00:00:00Z")
     while True:
@@ -29,7 +29,7 @@ def search_videos( keyword, keys, months ):
             part="snippet",
             q=keyword,
             type="video",
-            order="date", #video più recenti
+            #order="date", #video più recenti
             maxResults=50,
             publishedAfter=months_ago,  #solo ultimi X mesi
             pageToken=next_page_token
@@ -40,7 +40,7 @@ def search_videos( keyword, keys, months ):
             description = video["snippet"]["description"]
             
             #controllo che il titolo o la descrizione contengano il ticker stesso
-            if not ticker.lower() in title.lower() and not ticker.lower() in description.lower():
+            if ticker.lower() not in title.lower() and ticker.lower() not in description.lower():
                 continue
 
             #controllo che il titolo o la descrizione contengano almeno una delle keys
@@ -74,7 +74,7 @@ def download_comments_from_videos( ticker, videos ):
             response = youtube.commentThreads().list(
                 part="snippet",
                 videoId=video["id"],
-                maxResults=100, #max commenti per video
+                maxResults=50, #max commenti per video
                 textFormat="plainText",
                 order="relevance"
             ).execute()
@@ -121,12 +121,11 @@ if __name__=="__main__":
     #tickers = ["AAPL"]
 
     #il titolo del video deve contenere almeno una di queste
-    keys = ["stock", "stocks", "price", "buy", "sell", "earnings", "analysis", "investment"]
+    keys = ["stock", "stocks", "buy", "sell", "price", "earnings", "analysis", "investment", "hold", "bullish", "bearish", "moon", "pump", "dump", "bagholder", "rocket", "diamond hands", "squeeze"]
 
     for ticker in tickers:
-        keyword = ticker + " stock"
         months_ago = 12
-        videos = search_videos( keyword, keys, months_ago )
+        videos = search_videos( ticker, keys, months_ago )
 
         download_comments_from_videos( ticker, videos )
         

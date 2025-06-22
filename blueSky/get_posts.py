@@ -57,6 +57,7 @@ def get_posts( ticker, name, keys, years ):
                 #controllo che il post contenga almeno una delle keys
                 if not any(key in text.lower() for key in keys):
                     continue
+                
                 data.append({
                     'userName': post['author'].handle,
                     'date': record.created_at,
