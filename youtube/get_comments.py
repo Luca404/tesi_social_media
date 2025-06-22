@@ -18,8 +18,15 @@ INDEX = "MS50"
 youtube = build("youtube", "v3", developerKey=API_KEY)
 
 
-#cerca i (max) video più recenti riguardo la (keyword)
+#cerca i video relativi a (ticker), che contengano almeno una (keys), negli scorsi (months)
 def search_videos( ticker, keys, months ):
+    #carico video già presenti
+    video_existing_ids = []
+    videos_file = Path(PATH / f"data{INDEX}" / f"{ticker}_titles.csv")
+    if videos_file.is_file():
+        existing_videos = pd.read_csv( videos_file )
+        video_existing_ids = existing_videos["videoId"].tolist()
+
     videos = []
     keyword = f"${ticker}"
     next_page_token = None
@@ -36,20 +43,24 @@ def search_videos( ticker, keys, months ):
         ).execute()
 
         for video in response["items"]:
-            title = video["snippet"]["title"]
-            description = video["snippet"]["description"]
+            video_id = video["id"]["videoId"]
             
-            #controllo che il titolo o la descrizione contengano il ticker stesso
-            if ticker.lower() not in title.lower() and ticker.lower() not in description.lower():
-                continue
+            #controllo che il video non sia già esistente
+            if video_id not in video_existing_ids:
+                title = video["snippet"]["title"]
+                description = video["snippet"]["description"]
+                
+                #controllo che il titolo o la descrizione contengano il ticker stesso
+                if ticker.lower() not in title.lower() and ticker.lower() not in description.lower():
+                    continue
 
-            #controllo che il titolo o la descrizione contengano almeno una delle keys
-            if not any(key in title.lower() or key in description.lower() for key in keys):
-                continue
+                #controllo che il titolo o la descrizione contengano almeno una delle keys
+                if not any(key in title.lower() or key in description.lower() for key in keys):
+                    continue
 
-            videos.append({ "id": video["id"]["videoId"],
-                            "date": video["snippet"]["publishedAt"], 
-                            "title": title })
+                videos.append({ "videoDate": video["snippet"]["publishedAt"],
+                                "videoId": video_id, 
+                                "videoTitle": title })
         
         #Scorre a prossima pagina se disponibile
         next_page_token = response.get("nextPageToken")
@@ -57,77 +68,97 @@ def search_videos( ticker, keys, months ):
             break
     
     print( f"Scaricati {len(videos)} video per la keyword {keyword}" )
+
+    videos_df = pd.DataFrame( videos )
+    #considero video già presenti
+    if video_existing_ids:
+        #aggiungo nuovi commenti
+        data = pd.concat([existing_videos, videos_df], ignore_index=True)
+        #sorto per data per averli in ordine cronologico
+        data["videoDate"] = pd.to_datetime(data["videoDate"])
+        data = data.sort_values(by="videoDate", ascending=False)
+        #salvo in csv
+        data.to_csv( videos_file, index="videoDate" )
+    else:
+        videos_df.to_csv( videos_file, index="videoDate" )
+    
     return videos
 
 
-#Scarico i primi (max) commenti da una lista di (videos)
-def download_comments_from_videos( ticker, videos ):
-    titles = []
+#Cerca i primi (limit) commenti da una lista di (videos)
+def download_comments_from_videos( ticker, videos, limit ):
+    #carico commenti già presenti
+    comment_existing_ids = []
+    comments_file = Path(PATH / f"data{INDEX}" / f"{ticker}_comments.csv")
+    if comments_file.is_file():
+        existing_comments = pd.read_csv( comments_file )
+        comment_existing_ids = existing_comments["commentId"].tolist()
+    
     comments = []
     
     #scorro tutti i video
     for video in videos:
-        #salvo i titoli dei video
-        titles.append({"videoDate": video["date"], "videoId": video["id"], "videoTitle": video["title"]})
-
         try:
             response = youtube.commentThreads().list(
                 part="snippet",
                 videoId=video["id"],
-                maxResults=50, #max commenti per video
+                maxResults=limit, #max commenti per video
                 textFormat="plainText",
                 order="relevance"
             ).execute()
             
             for item in response["items"]:
-                comment_text = item["snippet"]["topLevelComment"]["snippet"]["textDisplay"].strip()
-                comment_text = re.sub(r'[\r\n\u2028\u2029]+', ' ', comment_text)
-                comments.append({
-                    "videoDate": video["date"],
-                    "videoId": video["id"],
-                    "videoTitle": video["title"],
-                    "commentDate": item["snippet"]["topLevelComment"]["snippet"]["publishedAt"],
-                    "commentId": item["snippet"]["topLevelComment"]["id"],
-                    "userName": item["snippet"]["topLevelComment"]["snippet"]["authorDisplayName"],
-                    "comment_text": comment_text,
-                    "likes": item["snippet"]["topLevelComment"]["snippet"]["likeCount"]    
-                })
+                comment_id = item["snippet"]["topLevelComment"]["id"]
+
+                #controllo che il commento non sia già presente
+                if comment_id not in comment_existing_ids:
+                    comment_text = item["snippet"]["topLevelComment"]["snippet"]["textDisplay"].strip()
+                    comment_text = re.sub(r'[\r\n\u2028\u2029]+', ' ', comment_text)
+                    comments.append({
+                        "videoDate": video["videoDate"],
+                        "videoId": video["videoId"],
+                        "videoTitle": video["videoTitle"],
+                        "commentDate": item["snippet"]["topLevelComment"]["snippet"]["publishedAt"],
+                        "commentId": comment_id,
+                        "userName": item["snippet"]["topLevelComment"]["snippet"]["authorDisplayName"],
+                        "comment_text": comment_text,
+                        "likes": item["snippet"]["topLevelComment"]["snippet"]["likeCount"]    
+                    })
 
         #evita problemi per video con commenti disabilitati    
         except:
             pass
     
     print( f"Scaricati {len(comments)} commenti\n" )
-
-    save_data_to_csv( titles, "videoDate", f"{ticker}_titles" )
-    save_data_to_csv( comments, "commentDate", f"{ticker}_comments" )
-
-
-#Salvo list to .csv 
-def save_data_to_csv( data, index, file_name ):
-    try:
-        df = pd.DataFrame( data )
-        df = df.set_index( index )
-        df.to_csv( PATH / f"data{INDEX}" / f"{file_name}.csv" )
     
-    except Exception as e:
-        print( f"{e}\n" )
+    comments_df = pd.DataFrame( comments )
+    #considero commenti già presenti
+    if comment_existing_ids:
+        #aggiungo nuovi commenti
+        data = pd.concat([existing_comments, comments_df], ignore_index=True)
+        #sorto per data per averli in ordine cronologico
+        data["commentDate"] = pd.to_datetime(data["commentDate"])
+        data = data.sort_values(by="commentDate", ascending=False)
+        #salvo in csv
+        data.to_csv( comments_file, index="commentDate" )
+    else:
+        comments_df.to_csv( comments_file, index="commentDate" )
 
 
 
 if __name__=="__main__":
     df = pd.read_csv( PATH / ".." / f"{INDEX}.csv" )
-    tickers = df["Ticker"].dropna().iloc[:5].tolist()
-    #tickers = ["AAPL"]
+    tickers = df["Ticker"].dropna().iloc[:1].tolist()
 
-    #il titolo del video deve contenere almeno una di queste
+    #il titolo/descrizione del video deve contenere almeno una di queste
     keys = ["stock", "stocks", "buy", "sell", "price", "earnings", "analysis", "investment", "hold", "bullish", "bearish", "moon", "pump", "dump", "bagholder", "rocket", "diamond hands", "squeeze"]
 
     for ticker in tickers:
-        months_ago = 12
-        videos = search_videos( ticker, keys, months_ago )
+        #cerca video relativi a (ticker), che contengano almeno una (keys), negli scorsi (months)
+        videos = search_videos( ticker, keys, 12 )
 
-        download_comments_from_videos( ticker, videos )
+        #scarica i primi (limit) commenti da lista (videos_ids)
+        download_comments_from_videos( ticker, videos, 20 )
         
         
     
