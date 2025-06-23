@@ -78,9 +78,11 @@ def search_videos( ticker, keys, months ):
         data["videoDate"] = pd.to_datetime(data["videoDate"])
         data = data.sort_values(by="videoDate", ascending=False)
         #salvo in csv
-        data.to_csv( videos_file, index="videoDate" )
+        data.set_index("videoDate", inplace=True)
+        data.to_csv( videos_file )
     else:
-        videos_df.to_csv( videos_file, index="videoDate" )
+        videos_df.set_index("videoDate", inplace=True)
+        videos_df.to_csv( videos_file )
     
     return videos
 
@@ -140,9 +142,11 @@ def download_comments_from_videos( ticker, videos, limit ):
         data["commentDate"] = pd.to_datetime(data["commentDate"])
         data = data.sort_values(by="commentDate", ascending=False)
         #salvo in csv
-        data.to_csv( comments_file, index="commentDate" )
+        data.set_index("commentDate", inplace=True)
+        data.to_csv( comments_file )
     else:
-        comments_df.to_csv( comments_file, index="commentDate" )
+        comments_df.set_index("commentDate", inplace=True)
+        comments_df.to_csv( comments_file )
 
 
 

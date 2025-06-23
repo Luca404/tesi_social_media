@@ -70,7 +70,6 @@ def get_float( tickers, years, save_name ):
         print("Nessun dato da salvare.")
 
 
-
 if __name__ == "__main__":
     tickers_name = "R2000_2025_tickers.csv"
     #carico tutti i tickers
