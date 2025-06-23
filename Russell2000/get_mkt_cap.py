@@ -14,16 +14,6 @@ DATA_PATH = PATH / "data"
 load_dotenv( PATH / "keys.env" )
 API_KEY = os.getenv( "API_KEY_FMP" )
 
-#carico df (input), prendo solo (columns) e salvo in (output)
-def extract_columns( input, columns, output):
-    try:
-        data = pd.read_csv( DATA_PATH / input, usecols=columns )
-        data.to_csv( DATA_PATH / output, index=None )
-        pass
-
-    except Exception as e:
-        return e
-
 #scarico market cap mensile di tutti i (tickers_name) per gli ultimi (years) e salvo in (save_name) 
 def get_mkt_cap( tickers_name, years, save_name ):
     output_name = DATA_PATH / save_name
@@ -84,6 +74,4 @@ def get_mkt_cap( tickers_name, years, save_name ):
 
 
 if __name__ == "__main__":
-    #extract_columns( "Russell2000_2025.csv",  ["Ticker", "Name"], "R2000_2025_tickers.csv")
-
     get_mkt_cap( "R2000_2025_tickers.csv", 1, "R2000_2025_mktcap.csv" )
