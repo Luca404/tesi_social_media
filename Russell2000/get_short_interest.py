@@ -63,8 +63,9 @@ def get_short_interest(tickers, file_name, years):
             #prendo solo i ticker contenuti in (tickers)
             df = df[df["symbolCode"].isin(tickers)]
 
+            #se non è vuoto aggiungo ai dati totali
             if not df.empty:
-                #formatto la data
+                #formatto data, per evitare problemi dopo
                 df["settlementDate"] = file_date
                 all_data.append(df)
             
