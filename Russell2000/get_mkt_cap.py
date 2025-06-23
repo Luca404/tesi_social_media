@@ -28,7 +28,7 @@ def extract_columns( input, columns, output):
 def get_mkt_cap( tickers_name, years, save_name ):
     output_name = DATA_PATH / save_name
 
-    call_limit = 240    #limite giornaliero
+    call_limit = 250    #limite giornaliero
     pause = 1.0 / 4     #max 4 richieste al secondo
 
     #Calcolo date
@@ -36,6 +36,7 @@ def get_mkt_cap( tickers_name, years, save_name ):
     start = (today - timedelta(days=years*365)).strftime("%Y-%m-%d")
     end = today.strftime("%Y-%m-%d")
 
+    #carico tutti i tickers
     tickers = pd.read_csv( DATA_PATH / tickers_name, usecols=["Ticker"] ).iloc[:, 0].dropna().unique().tolist()
 
     #carico tickers già scaricati
@@ -73,7 +74,7 @@ def get_mkt_cap( tickers_name, years, save_name ):
     
     if mkt_cap:
         final_df = pd.concat(mkt_cap, ignore_index=True)
-        if os.path.exists( output_name ):
+        if old_tickers:
             final_df.to_csv(output_name, mode='a', header=False, index=False)
         else:
             final_df.to_csv(output_name, index=False)
