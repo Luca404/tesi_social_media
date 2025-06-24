@@ -17,9 +17,9 @@ API_KEY = os.getenv( "API_KEY_FMP" )
 
 #scarico market cap mensile di tutti i (tickers_name) per gli ultimi (years) e salvo in (save_name) 
 def get_mkt_cap( tickers ):
-    output_name = DATA_PATH/f"{INDEX}.csv"
+    output_name = DATA_PATH/f"{INDEX}_mktcap.csv"
 
-    call_limit = 10    #limite giornaliero
+    call_limit = 250    #limite giornaliero
     pause = 1.0 / 4     #max 4 richieste al secondo
 
     #carico tickers già scaricati
