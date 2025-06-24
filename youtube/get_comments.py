@@ -14,9 +14,6 @@ PATH = Path(__file__).parent
 load_dotenv( PATH / "keys.env" )
 API_KEY = os.getenv( "API_KEY" )
 
-INDEX = "MS50"
-youtube = build("youtube", "v3", developerKey=API_KEY)
-
 
 #cerca i video relativi a (ticker), che contengano almeno una (keys), negli scorsi (months)
 def search_videos( ticker, keys, months ):
@@ -149,6 +146,8 @@ def download_comments_from_videos( ticker, videos, limit ):
         comments_df.to_csv( comments_file )
 
 
+INDEX = "MS50"
+youtube = build("youtube", "v3", developerKey=API_KEY)
 
 if __name__=="__main__":
     df = pd.read_csv( PATH / ".." / f"{INDEX}.csv" )

@@ -18,7 +18,7 @@ API_KEY = os.getenv( "API_KEY_FMP" )
 def get_float( tickers, years, save_name ):
     output_name = DATA_PATH / save_name
 
-    call_limit = 250    #limite giornaliero
+    call_limit = 10    #limite giornaliero
     pause = 1.0 / 4     #max 4 richieste al secondo
 
     #Calcolo date
@@ -28,7 +28,7 @@ def get_float( tickers, years, save_name ):
 
     #carico tickers già scaricati
     old_tickers = []
-    if os.path.exists( output_name ):
+    if output_name.is_file():
         existing_data = pd.read_csv(output_name)
         old_tickers = existing_data["ticker"].unique().tolist()
     
@@ -69,6 +69,7 @@ def get_float( tickers, years, save_name ):
     else:
         print("Nessun dato da salvare.")
 
+INDEX = "R2000"
 
 if __name__ == "__main__":
     tickers_name = "R2000_2025_tickers.csv"
