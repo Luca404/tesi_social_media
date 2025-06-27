@@ -43,12 +43,9 @@ def get_mkt_cap( tickers ):
             df = pd.DataFrame(data)
             df["date"] = pd.to_datetime(df["date"])
             df = df.sort_values("date")
-
-            #trasformo in dati mensili, prendo ultimo giorno del mese
-            df.set_index("date", inplace=True)
-            monthly = df.resample("ME").last().reset_index()
-            monthly["ticker"] = ticker
-            mkt_cap.append(monthly[["date", "ticker", "marketCap"]])
+            df["ticker"] = ticker
+            
+            mkt_cap.append(df[["date", "ticker", "marketCap"]])
 
         except Exception as e:
             print(f"Errore per {ticker}: {e}")
@@ -64,6 +61,7 @@ def get_mkt_cap( tickers ):
         print(f"Dati salvati correttamente")
     else:
         print("Nessun dato da salvare.")
+
 
 INDEX = "MS8"
 
