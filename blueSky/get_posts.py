@@ -118,6 +118,7 @@ def get_posts( ticker, keys, years ):
 client = Client()
 client.login(USERNAME, PASSWORD)
 
+INDEX_PATH = PATH /".."/"indexes"
 INDEX = "MS50"
 
 if __name__ == "__main__":
@@ -125,7 +126,7 @@ if __name__ == "__main__":
     end_tickers = 10
     keys = ["stock", "stocks", "buy", "sell", "price", "earnings", "analysis", "investment", "hold", "bullish", "bearish", "moon", "pump", "dump", "bagholder", "rocket", "diamond hands", "squeeze"]
     
-    df = pd.read_csv( PATH / ".." / f"{INDEX}.csv" )
+    df = pd.read_csv( INDEX_PATH / f"{INDEX}.csv" )
     tickers = df["Ticker"].iloc[start_ticker:end_tickers].tolist()
     
     for ticker in tickers:

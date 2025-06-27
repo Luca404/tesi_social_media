@@ -66,20 +66,21 @@ def search_videos( ticker, keys, months ):
     
     print( f"Scaricati {len(videos)} video per la keyword {keyword}" )
 
-    videos_df = pd.DataFrame( videos )
-    #considero video già presenti
-    if video_existing_ids:
-        #aggiungo nuovi commenti
-        data = pd.concat([existing_videos, videos_df], ignore_index=True)
-        #sorto per data per averli in ordine cronologico
-        data["videoDate"] = pd.to_datetime(data["videoDate"])
-        data = data.sort_values(by="videoDate", ascending=False)
-        #salvo in csv
-        data.set_index("videoDate", inplace=True)
-        data.to_csv( videos_file )
-    else:
-        videos_df.set_index("videoDate", inplace=True)
-        videos_df.to_csv( videos_file )
+    if videos:
+        videos_df = pd.DataFrame( videos )
+        #considero video già presenti
+        if video_existing_ids:
+            #aggiungo nuovi commenti
+            data = pd.concat([existing_videos, videos_df], ignore_index=True)
+            #sorto per data per averli in ordine cronologico
+            data["videoDate"] = pd.to_datetime(data["videoDate"])
+            data = data.sort_values(by="videoDate", ascending=False)
+            #salvo in csv
+            data.set_index("videoDate", inplace=True)
+            data.to_csv( videos_file )
+        else:
+            videos_df.set_index("videoDate", inplace=True)
+            videos_df.to_csv( videos_file )
     
     return videos
 
@@ -100,7 +101,7 @@ def download_comments_from_videos( ticker, videos, limit ):
         try:
             response = youtube.commentThreads().list(
                 part="snippet",
-                videoId=video["id"],
+                videoId=video["videoId"],
                 maxResults=limit, #max commenti per video
                 textFormat="plainText",
                 order="relevance"
@@ -130,28 +131,30 @@ def download_comments_from_videos( ticker, videos, limit ):
     
     print( f"Scaricati {len(comments)} commenti\n" )
     
-    comments_df = pd.DataFrame( comments )
-    #considero commenti già presenti
-    if comment_existing_ids:
-        #aggiungo nuovi commenti
-        data = pd.concat([existing_comments, comments_df], ignore_index=True)
-        #sorto per data per averli in ordine cronologico
-        data["commentDate"] = pd.to_datetime(data["commentDate"])
-        data = data.sort_values(by="commentDate", ascending=False)
-        #salvo in csv
-        data.set_index("commentDate", inplace=True)
-        data.to_csv( comments_file )
-    else:
-        comments_df.set_index("commentDate", inplace=True)
-        comments_df.to_csv( comments_file )
+    if comments:
+        comments_df = pd.DataFrame( comments )
+        #considero commenti già presenti
+        if comment_existing_ids:
+            #aggiungo nuovi commenti
+            data = pd.concat([existing_comments, comments_df], ignore_index=True)
+            #sorto per data per averli in ordine cronologico
+            data["commentDate"] = pd.to_datetime(data["commentDate"])
+            data = data.sort_values(by="commentDate", ascending=False)
+            #salvo in csv
+            data.set_index("commentDate", inplace=True)
+            data.to_csv( comments_file )
+        else:
+            comments_df.set_index("commentDate", inplace=True)
+            comments_df.to_csv( comments_file )
 
 
-INDEX = "MS50"
+INDEX_PATH = PATH /".."/"indexes"
+INDEX = "MS8"
 youtube = build("youtube", "v3", developerKey=API_KEY)
 
 if __name__=="__main__":
-    df = pd.read_csv( PATH / ".." / f"{INDEX}.csv" )
-    tickers = df["Ticker"].dropna().iloc[:1].tolist()
+    df = pd.read_csv( INDEX_PATH / f"{INDEX}.csv" )
+    tickers = df["Ticker"].dropna().tolist()
 
     #il titolo/descrizione del video deve contenere almeno una di queste
     keys = ["stock", "stocks", "buy", "sell", "price", "earnings", "analysis", "investment", "hold", "bullish", "bearish", "moon", "pump", "dump", "bagholder", "rocket", "diamond hands", "squeeze"]
@@ -160,7 +163,7 @@ if __name__=="__main__":
         #cerca video relativi a (ticker), che contengano almeno una (keys), negli scorsi (months)
         videos = search_videos( ticker, keys, 12 )
 
-        #scarica i primi (limit) commenti da lista (videos_ids)
+        #scarica i primi (limit) commenti da lista (videos)
         download_comments_from_videos( ticker, videos, 20 )
         
         
